@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 4.0)
+cares_add_test(cancel_destroy_test cancel_destroy_test.cc)
+set_tests_properties(cancel_destroy_test PROPERTIES TIMEOUT 20)
+find_package(Threads REQUIRED)
+cares_add_test(thread_claim_test thread_claim_test.cc)
+target_link_libraries(thread_claim_test PRIVATE Threads::Threads)
+set_tests_properties(thread_claim_test PROPERTIES TIMEOUT 20)

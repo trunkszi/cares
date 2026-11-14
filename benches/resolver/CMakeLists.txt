@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 4.0)
+add_executable(proactor_resolve_bench proactor_resolve_bench.cc)
+cares_configure_internal(proactor_resolve_bench)
+if(TARGET cares_probes)
+  target_link_libraries(proactor_resolve_bench PRIVATE cares_probes)
+  target_compile_definitions(proactor_resolve_bench PRIVATE CARES_HAS_PROBES)
+endif()

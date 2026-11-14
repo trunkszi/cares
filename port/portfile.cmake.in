@@ -1,0 +1,35 @@
+# Only the release package is needed for these header-first targets.
+set(VCPKG_BUILD_TYPE release)
+set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
+vcpkg_from_github(
+    OUT_SOURCE_PATH SOURCE_PATH
+    REPO trunkszi/cares
+    REF "v@VERSION@"
+    SHA512 @SHA512@
+    HEAD_REF main
+)
+
+file(REMOVE "${SOURCE_PATH}/vcpkg.json" "${SOURCE_PATH}/vcpkg-configuration.json")
+
+vcpkg_cmake_configure(
+    SOURCE_PATH "${SOURCE_PATH}"
+    OPTIONS
+        -DVCPKG_MANIFEST_MODE=OFF
+        -DCMAKE_INSTALL_LIBDIR=lib
+        -DCARES_BUILD_TESTS=OFF
+        -DCARES_BUILD_TOOLS=OFF
+        -DCARES_BUILD_EXAMPLES=OFF
+        -DCARES_BUILD_BENCHES=OFF
+        -DCARES_INSTALL_PACKAGE=ON
+)
+
+vcpkg_cmake_install()
+
+vcpkg_cmake_config_fixup(
+    PACKAGE_NAME cares
+    CONFIG_PATH lib/cmake/cares
+)
+
+file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+
+vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")

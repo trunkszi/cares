@@ -1,0 +1,8 @@
+cares provides a C++26 DNS resolver driven by uring::Proactor.
+Configure consumers with CMake >= 4.0 and the required dependency packages.
+
+    find_package(cares CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE cares::cares)
+
+The umbrella header is <cares/cares.hpp>. ResolveEndpoints returns Result<EndpointList> by value.
+The resolver arms io_uring POLL_ADD, POLL_REMOVE, and TIMEOUT operations. It does not call poll, select, or epoll_wait.

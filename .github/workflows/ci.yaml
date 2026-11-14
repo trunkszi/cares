@@ -1,0 +1,113 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [gcc-glibc, clang-glibc, gcc-musl, clang-musl]
+    env:
+      GRPCXX_SETUP_JOBS: '2'
+      GRPCXX_TOOLCHAIN: ${{ matrix.toolchain }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install CMake 4.0+
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: latest
+      - name: Cache compiler, vcpkg archives, and ccache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/toolchain/${{ matrix.toolchain }}
+            ~/.local/toolchain/gcc-glibc
+            ~/.cache/vcpkg/archives
+            ~/.cache/ccache
+          key: cares-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.toolchain }}-${{ hashFiles('scripts/install-dependencies.sh', '.github/scripts/setup-ci-deps.sh', 'CMakePresets.json') }}
+      - name: Install native compiler and dependencies
+        run: |
+          bash scripts/install-dependencies.sh --toolchain "$GRPCXX_TOOLCHAIN"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install clang-tidy-23
+        if: matrix.toolchain == 'clang-glibc'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y gnupg
+          codename="$(. /etc/os-release && printf '%s' "${VERSION_CODENAME}")"
+          installed=0
+          if curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
+              | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/apt-llvm-org.gpg; then
+            echo "deb [signed-by=/usr/share/keyrings/apt-llvm-org.gpg] http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-23 main" \
+              | sudo tee /etc/apt/sources.list.d/llvm-23.list >/dev/null
+            if sudo apt-get update && sudo apt-get install -y clang-tidy-23; then
+              installed=1
+            fi
+          fi
+          if [ "${installed}" -ne 1 ]; then
+            sudo rm -f /etc/apt/sources.list.d/llvm-23.list
+            sudo apt-get update
+            sudo apt-get install -y clang-tidy
+          fi
+      - name: Enable io_uring
+        run: sudo sysctl -w kernel.io_uring_disabled=0
+      - name: Check scripts and CLI
+        run: |
+          bash -n scripts/install-dependencies.sh .github/scripts/setup-ci-deps.sh
+          uv run --directory scripts/cli ruff check .
+          uv run --directory scripts/cli pytest
+      - name: Check formatting
+        if: matrix.toolchain == 'clang-glibc'
+        run: ./cares format --check
+      - name: Check file size limits
+        run: |
+          python3 - <<'PY'
+          import pathlib, subprocess
+          names = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          for name in names:
+              path = pathlib.Path(name)
+              if path.is_file() and (path.suffix in {".h", ".hpp", ".cc", ".py"} or path.name == "CMakeLists.txt"):
+                  count = len(path.read_bytes().splitlines())
+                  if count >= 600:
+                      raise SystemExit(f"{name}: {count} lines reaches 600-line limit")
+          PY
+      - name: Release build and tests
+        run: ./cares test --preset "${GRPCXX_TOOLCHAIN}-release" -j 2
+      - name: Clang-tidy
+        if: matrix.toolchain == 'clang-glibc'
+        run: |
+          if command -v clang-tidy-23 >/dev/null 2>&1; then
+            clang-tidy-23 --version
+          else
+            clang-tidy --version
+          fi
+          ./cares tidy --preset clang-glibc-release
+      - name: ASan and UBSan tests
+        if: matrix.toolchain == 'gcc-glibc' || matrix.toolchain == 'clang-glibc'
+        run: ./cares test --preset "${GRPCXX_TOOLCHAIN}-asan-ubsan" -j 2
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics-${{ matrix.toolchain }}
+          path: |
+            build/**/Testing/Temporary/
+            build/**/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore

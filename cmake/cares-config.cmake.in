@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+include(CMakeFindDependencyMacro)
+find_dependency(uarch CONFIG REQUIRED)
+find_dependency(uring CONFIG REQUIRED)
+find_dependency(c-ares CONFIG REQUIRED)
+include("${CMAKE_CURRENT_LIST_DIR}/cares-targets.cmake")
+check_required_components(cares)

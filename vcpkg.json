@@ -1,0 +1,21 @@
+{
+  "name": "cares",
+  "version-semver": "0.1.0",
+  "description": "C++26 header-first asynchronous DNS resolver. Configure with CMake >= 4.0 and the required dependency packages.",
+  "dependencies": [
+    "uarch",
+    "uring",
+    {
+      "name": "c-ares",
+      "default-features": false
+    }
+  ],
+  "features": {
+    "benchmarks": {
+      "description": "Build benchmarks",
+      "dependencies": [
+        "benchmark"
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 4.0)
+foreach(source IN ITEMS udp_resolve_e2e_test.cc tcp_fallback_e2e_test.cc)
+  get_filename_component(target "${source}" NAME_WE)
+  cares_add_test(${target} "${source}")
+  set_tests_properties(${target} PROPERTIES TIMEOUT 20)
+endforeach()

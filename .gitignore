@@ -1,0 +1,9 @@
+/build/
+/.scratch/
+/output/
+/vcpkg_installed/
+compile_commands.json
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/

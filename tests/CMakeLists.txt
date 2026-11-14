@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 4.0)
+foreach(directory IN ITEMS consteval unit compile_fail e2e lifecycle scenario)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${directory}/CMakeLists.txt")
+    add_subdirectory(${directory})
+  endif()
+endforeach()

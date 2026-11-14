@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 4.0)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/record/CMakeLists.txt")
+  add_subdirectory(record)
+endif()
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/query_table/CMakeLists.txt")
+  add_subdirectory(query_table)
+endif()
+add_subdirectory(resolver)

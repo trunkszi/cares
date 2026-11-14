@@ -1,0 +1,8 @@
+include_guard(GLOBAL)
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/tmp")
+if(DEFINED CARES_TOOLCHAIN_NAME)
+  message(STATUS "cares toolchain profile: ${CARES_TOOLCHAIN_NAME}")
+endif()
+if(DEFINED CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO)
+  message(VERBOSE "cares imported RelWithDebInfo mapping: ${CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO}")
+endif()

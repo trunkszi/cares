@@ -1,0 +1,3 @@
+cmake_minimum_required(VERSION 4.0)
+cares_add_test(timeout_retry_nxdomain_test timeout_retry_nxdomain_test.cc)
+set_tests_properties(timeout_retry_nxdomain_test PROPERTIES TIMEOUT 20)
