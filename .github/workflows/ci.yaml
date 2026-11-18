@@ -40,7 +40,7 @@ jobs:
             ~/.local/toolchain/gcc-glibc
             ~/.cache/vcpkg/archives
             ~/.cache/ccache
-          key: cares-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.toolchain }}-${{ hashFiles('scripts/install-dependencies.sh', '.github/scripts/setup-ci-deps.sh', 'CMakePresets.json') }}
+          key: cares-vcpkg-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.toolchain }}-${{ hashFiles('scripts/install-dependencies.sh', '.github/scripts/setup-ci-deps.sh', 'CMakePresets.json', '.github/ci-ports/**', 'vcpkg.json') }}
       - name: Install native compiler and dependencies
         run: |
           bash scripts/install-dependencies.sh --toolchain "$GRPCXX_TOOLCHAIN"

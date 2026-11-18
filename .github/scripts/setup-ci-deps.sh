@@ -64,69 +64,21 @@ install_one_toolchain() {
     "$root/bin/$compiler_name" --version | head -n 1
 }
 
-ensure_uarch_port() {
-    local overlay="$1" sha="${UARCH_COMMIT:-adeda748eb3cf30fffd06c2cf0f7c8a3a671f7c6}"
-    [[ -n "$(ls -A "$overlay/uarch" 2>/dev/null)" ]] && return 0
-    mkdir -p "$overlay/uarch"
-    cat > "$overlay/uarch/vcpkg.json" <<'EOF'
-{
-  "name": "uarch",
-  "version": "0.1.0",
-  "description": "Runtime-free C++26 microarchitectural primitives and compile-time TMA layout contracts",
-  "homepage": "https://github.com/trunkszi/uarch",
-  "license": "MIT",
-  "supports": "linux & x64",
-  "dependencies": [
-    { "name": "vcpkg-cmake", "host": true },
-    { "name": "vcpkg-cmake-config", "host": true }
-  ]
+materialize_overlay_port() {
+    local overlay="$1" port="$2"
+    [[ -n "$(ls -A "$overlay/$port" 2>/dev/null)" ]] && return 0
+    local ports_dir
+    ports_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../ci-ports" && pwd)"
+    mkdir -p "$overlay/$port"
+    cp -a "$ports_dir/$port/." "$overlay/$port/"
 }
-EOF
-    cat > "$overlay/uarch/portfile.cmake" <<EOF
-set(VCPKG_BUILD_TYPE release)
-set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
-vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
-vcpkg_from_git(OUT_SOURCE_PATH SOURCE_PATH URL "https://github.com/trunkszi/uarch.git" REF "${sha}" FETCH_REF "main" HEAD_REF "main")
-file(REMOVE "\${SOURCE_PATH}/vcpkg.json" "\${SOURCE_PATH}/vcpkg-configuration.json")
-vcpkg_cmake_configure(SOURCE_PATH "\${SOURCE_PATH}" OPTIONS -DVCPKG_MANIFEST_MODE=OFF -DCMAKE_INSTALL_LIBDIR=lib -DUARCH_AUTO_DOWNLOAD_TOOLCHAIN=OFF -DUARCH_BUILD_TESTS=OFF -DUARCH_BUILD_EXAMPLES=OFF -DUARCH_BUILD_BENCHES=OFF -DUARCH_BUILD_TOOLS=OFF -DUARCH_ENABLE_SANITIZERS=OFF -DUARCH_INSTALL_PACKAGE=ON)
-vcpkg_cmake_install()
-vcpkg_cmake_config_fixup(PACKAGE_NAME uarch CONFIG_PATH lib/cmake/uarch)
-file(REMOVE_RECURSE "\${CURRENT_PACKAGES_DIR}/debug")
-vcpkg_install_copyright(FILE_LIST "\${SOURCE_PATH}/LICENSE")
-EOF
+
+ensure_uarch_port() {
+    materialize_overlay_port "$1" uarch
 }
 
 ensure_uring_port() {
-    local overlay="$1" sha="${URING_COMMIT:-6297d6dd05caff4c20612c588a752ee8e59d924a}"
-    [[ -n "$(ls -A "$overlay/uring" 2>/dev/null)" ]] && return 0
-    mkdir -p "$overlay/uring"
-    cat > "$overlay/uring/vcpkg.json" <<'EOF'
-{
-  "name": "uring",
-  "version-semver": "0.1.0",
-  "description": "C++26 runtime-free io_uring and futex2 proactor framework",
-  "homepage": "https://github.com/trunkszi/uring",
-  "license": "MIT",
-  "supports": "linux & x64",
-  "dependencies": [
-    "uarch",
-    { "name": "vcpkg-cmake", "host": true },
-    { "name": "vcpkg-cmake-config", "host": true }
-  ]
-}
-EOF
-    cat > "$overlay/uring/portfile.cmake" <<EOF
-set(VCPKG_BUILD_TYPE release)
-set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
-vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
-vcpkg_from_git(OUT_SOURCE_PATH SOURCE_PATH URL "https://github.com/trunkszi/uring.git" REF "${sha}" FETCH_REF "main" HEAD_REF "main")
-file(REMOVE "\${SOURCE_PATH}/vcpkg.json" "\${SOURCE_PATH}/vcpkg-configuration.json")
-vcpkg_cmake_configure(SOURCE_PATH "\${SOURCE_PATH}" OPTIONS -DVCPKG_MANIFEST_MODE=OFF -DCMAKE_INSTALL_LIBDIR=lib -DURING_AUTO_DOWNLOAD_TOOLCHAIN=OFF -DURING_BUILD_TESTS=OFF -DURING_BUILD_EXAMPLES=OFF -DURING_BUILD_BENCHES=OFF -DURING_BUILD_TOOLS=OFF -DURING_ENABLE_SANITIZERS=OFF -DURING_INSTALL_PACKAGE=ON)
-vcpkg_cmake_install()
-vcpkg_cmake_config_fixup(PACKAGE_NAME uring CONFIG_PATH lib/cmake/uring)
-file(REMOVE_RECURSE "\${CURRENT_PACKAGES_DIR}/debug")
-vcpkg_install_copyright(FILE_LIST "\${SOURCE_PATH}/LICENSE")
-EOF
+    materialize_overlay_port "$1" uring
 }
 
 ensure_c_ares_single_thread_port() {
